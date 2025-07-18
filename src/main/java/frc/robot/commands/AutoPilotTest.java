@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.Centimeters;
 import static edu.wpi.first.units.Units.Degrees;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.ctre.phoenix6.swerve.SwerveRequest.ForwardPerspectiveValue;
 import com.therekrab.autopilot.APConstraints;
 import com.therekrab.autopilot.APProfile;
 import com.therekrab.autopilot.APTarget;
@@ -29,9 +30,10 @@ public class AutoPilotTest extends Command {
                     .withErrorTheta(Degrees.of(0.5))
                     .withBeelineRadius(Centimeters.of(8)));
     private final APTarget apTarget;
-    
+
     private final SwerveRequest.FieldCentricFacingAngle swerveRequest = new SwerveRequest.FieldCentricFacingAngle()
-            .withHeadingPID(5, 0, 0);
+            .withHeadingPID(5, 0, 0)
+            .withForwardPerspective(ForwardPerspectiveValue.BlueAlliance);
 
     private final NetworkTable autoPilotTable = NetworkTableInstance.getDefault().getTable("AutoPilot");
     private final ProtobufPublisher<Transform2d> targetPublisher = autoPilotTable
@@ -47,9 +49,9 @@ public class AutoPilotTest extends Command {
     @Override
     public void execute() {
         var driveState = drivetrain.getState();
-        var fieldOrientedRobotSpeed = new Translation2d(driveState.Speeds.vxMetersPerSecond,
-                driveState.Speeds.vyMetersPerSecond)
-                .rotateBy(driveState.Pose.getRotation());
+        var fieldOrientedRobotSpeed =
+                new Translation2d(driveState.Speeds.vxMetersPerSecond, driveState.Speeds.vyMetersPerSecond)
+                        .rotateBy(driveState.Pose.getRotation());
 
         var autoPilotSpeedAndHeading = autopilot.calculate(
                 driveState.Pose,
@@ -62,5 +64,16 @@ public class AutoPilotTest extends Command {
                 .withVelocityX(autoPilotSpeedAndHeading.getX())
                 .withVelocityX(autoPilotSpeedAndHeading.getY())
                 .withTargetDirection(autoPilotSpeedAndHeading.getRotation()));
+    }
+
+    @Override
+    public boolean isFinished() {
+        return autopilot.atTarget(drivetrain.getState().Pose, apTarget);
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        targetPublisher.accept(new Transform2d());
+        drivetrain.setControl(new SwerveRequest.Idle());
     }
 }
