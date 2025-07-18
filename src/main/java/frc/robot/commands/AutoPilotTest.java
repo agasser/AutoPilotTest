@@ -24,11 +24,16 @@ public class AutoPilotTest extends Command {
 
     private final CommandSwerveDrivetrain drivetrain;
 
-    private final Autopilot autopilot = new Autopilot(
-            new APProfile().withConstraints(new APConstraints(5, 2))
-                    .withErrorXY(Centimeters.of(2))
-                    .withErrorTheta(Degrees.of(0.5))
-                    .withBeelineRadius(Centimeters.of(8)));
+    private final APConstraints apConstraints = new APConstraints()
+                .withVelocity(5)
+                .withAcceleration(5)
+                .withJerk(2);
+
+    private final Autopilot autopilot = new Autopilot(new APProfile()
+                .withConstraints(apConstraints)
+                .withErrorXY(Centimeters.of(2))
+                .withErrorTheta(Degrees.of(0.5))
+                .withBeelineRadius(Centimeters.of(8)));
     private final APTarget apTarget;
 
     private final SwerveRequest.FieldCentricFacingAngle swerveRequest = new SwerveRequest.FieldCentricFacingAngle()
